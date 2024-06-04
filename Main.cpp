@@ -16,7 +16,19 @@ public:
 private:
     void OnExit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+
+    void OnFilterByFaculty(wxCommandEvent& event);
+    void OnFilterByFacultyAndCourse(wxCommandEvent& event);
+    void OnFilterByBirthDate(wxCommandEvent& event);
+    void OnFilterByGroup(wxCommandEvent& event);
+    void OnFilterShowAll(wxCommandEvent& event);
     void OnAddStudent(wxCommandEvent& event);
+
+    void FilterStudentsByFaculty(const std::string& faculty);
+    void FilterStudentsByFacultyAndCourse();
+    void FilterStudentsByBirthDate(const std::string& birthDate);
+    void FilterStudentsByGroup(const std::string& group);
+    void FilterShowAll(const std::string& all);
 
     wxListBox* studentList;
     wxTextCtrl* inputSurname;
@@ -37,7 +49,12 @@ private:
 
 enum {
     ID_Hello = 1,
-    ID_AddStudent = 2
+    ID_AddStudent = 2,
+    ID_FilterByFaculty = 3,
+    ID_FilterByFacultyAndCourse = 4,
+    ID_FilterByBirthDate = 5,
+    ID_FilterByGroup = 6,
+    ID_FilterShowAll = 7
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -52,21 +69,29 @@ MyFrame::MyFrame(const wxString& title)
     : wxFrame(NULL, wxID_ANY, title), db("DKR.db"), logger("app.log") {
 
     wxMenu* menuFile = new wxMenu;
-    menuFile->Append(ID_Hello, "&Hello...\tCtrl-H", "Help string shown in status bar for this menu item");
+    menuFile->Append(ID_Hello, "&Info...\tCtrl-H", "Help string shown in status bar for this menu item");
     menuFile->AppendSeparator();
     menuFile->Append(wxID_EXIT);
 
     wxMenu* menuHelp = new wxMenu;
     menuHelp->Append(wxID_ABOUT);
 
+    wxMenu* menuFilter = new wxMenu;
+    menuFilter->Append(ID_FilterByFaculty, "By &Faculty...\tCtrl-F", "Filter students by faculty");
+    menuFilter->Append(ID_FilterByFacultyAndCourse, "By &Faculty and Course...\tCtrl-C", "Filter students by faculty and course");
+    menuFilter->Append(ID_FilterByBirthDate, "By &Birth Date...\tCtrl-B", "Filter students by birth date");
+    menuFilter->Append(ID_FilterByGroup, "By &Group...\tCtrl-G", "Filter students by group");
+    menuFilter->Append(ID_FilterShowAll, "Show &All...\tCtrl-A", "Show all students");
+
     wxMenuBar* menuBar = new wxMenuBar;
     menuBar->Append(menuFile, "&File");
+    menuBar->Append(menuFilter, "&Filter");
     menuBar->Append(menuHelp, "&Help");
 
     SetMenuBar(menuBar);
 
     CreateStatusBar();
-    SetStatusText("Welcome to wxWidgets!");
+    SetStatusText("Welcome to Student Manager!");
 
     wxPanel* panel = new wxPanel(this, -1);
 
@@ -124,6 +149,11 @@ MyFrame::MyFrame(const wxString& title)
 
     Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
     Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
+    Bind(wxEVT_MENU, &MyFrame::OnFilterByFaculty, this, ID_FilterByFaculty);
+    Bind(wxEVT_MENU, &MyFrame::OnFilterByFacultyAndCourse, this, ID_FilterByFacultyAndCourse);
+    Bind(wxEVT_MENU, &MyFrame::OnFilterByBirthDate, this, ID_FilterByBirthDate);
+    Bind(wxEVT_MENU, &MyFrame::OnFilterByGroup, this, ID_FilterByGroup);
+    Bind(wxEVT_MENU, &MyFrame::OnFilterShowAll, this, ID_FilterShowAll);
     Bind(wxEVT_BUTTON, &MyFrame::OnAddStudent, this, ID_AddStudent);
 
     db.createTable();
@@ -171,4 +201,98 @@ void MyFrame::RefreshStudentList() {
     }
 
     logger.log("Student list refreshed.");
+}
+
+void MyFrame::OnFilterByFaculty(wxCommandEvent& event) {
+    wxTextEntryDialog dialog(this, "Enter Faculty:", "Filter by Faculty");
+    if (dialog.ShowModal() == wxID_OK) {
+        std::string faculty = dialog.GetValue().ToStdString();
+        FilterStudentsByFaculty(faculty);
+    }
+}
+
+void MyFrame::OnFilterByFacultyAndCourse(wxCommandEvent& event) {
+    FilterStudentsByFacultyAndCourse();
+}
+
+void MyFrame::OnFilterByBirthDate(wxCommandEvent& event) {
+    wxTextEntryDialog dialog(this, "Enter Birth Date (YYYY-MM-DD):", "Filter by Birth Date");
+    if (dialog.ShowModal() == wxID_OK) {
+        std::string birthDate = dialog.GetValue().ToStdString();
+        FilterStudentsByBirthDate(birthDate);
+    }
+}
+
+void MyFrame::OnFilterByGroup(wxCommandEvent& event) {
+    wxTextEntryDialog dialog(this, "Enter Group:", "Filter by Group");
+    if (dialog.ShowModal() == wxID_OK) {
+        std::string group = dialog.GetValue().ToStdString();
+        FilterStudentsByGroup(group);
+    }
+}
+
+void MyFrame::OnFilterShowAll(wxCommandEvent& event) {
+    studentList->Clear();
+    for (const auto& student : students) {
+        studentList->Append(wxString::FromUTF8(student.toString().c_str()));
+    }
+    logger.log("Showed all. ");
+}
+
+void MyFrame::FilterStudentsByFaculty(const std::string& faculty) {
+    studentList->Clear();
+    for (const auto& student : students) {
+        if (student.getFaculty() == faculty) {
+            studentList->Append(wxString::FromUTF8(student.toString().c_str()));
+        }
+    }
+    logger.log("Filtered by faculty: " + faculty);
+}
+
+void MyFrame::FilterStudentsByFacultyAndCourse() {
+    wxTextEntryDialog facultyDialog(this, "Enter Faculty:", "Filter by Faculty and Course");
+    if (facultyDialog.ShowModal() == wxID_OK) {
+        std::string faculty = facultyDialog.GetValue().ToStdString();
+
+        wxTextEntryDialog courseDialog(this, "Enter Course:", "Filter by Faculty and Course");
+        if (courseDialog.ShowModal() == wxID_OK) {
+            int course = std::stoi(courseDialog.GetValue().ToStdString());
+
+            studentList->Clear();
+            for (const auto& student : students) {
+                if (student.getFaculty() == faculty && student.getCourse() == course) {
+                    studentList->Append(wxString::FromUTF8(student.toString().c_str()));
+                }
+            }
+            logger.log("Filtered by faculty: " + faculty + " and course: " + std::to_string(course));
+        }
+    }
+}
+
+void MyFrame::FilterStudentsByBirthDate(const std::string& birthDate) {
+    studentList->Clear();
+    for (const auto& student : students) {
+        if (student.getBirthDate() > birthDate) {
+            studentList->Append(wxString::FromUTF8(student.toString().c_str()));
+        }
+    }
+    logger.log("Filtered by birth date: " + birthDate);
+}
+
+void MyFrame::FilterStudentsByGroup(const std::string& group) {
+    studentList->Clear();
+    for (const auto& student : students) {
+        if (student.getGroup() == group) {
+            studentList->Append(wxString::FromUTF8(student.toString().c_str()));
+        }
+    }
+    logger.log("Filtered by group: " + group);
+}
+
+void MyFrame::FilterShowAll(const std::string& all) {
+    studentList->Clear();
+    for (const auto& student : students) {
+        studentList->Append(wxString::FromUTF8(student.toString().c_str()));
+    }
+    logger.log("Showed all: ");
 }
