@@ -1,5 +1,6 @@
 #include <wx/wx.h>
 #include "Student.h"
+#include "Database.h"
 #include <vector>
 
 class MyApp : public wxApp {
@@ -14,15 +15,27 @@ public:
 private:
     void OnExit(wxCommandEvent& event);
     void OnAbout(wxCommandEvent& event);
+    void OnAddStudent(wxCommandEvent& event);
 
     wxListBox* studentList;
+    wxTextCtrl* inputSurname;
+    wxTextCtrl* inputName;
+    wxTextCtrl* inputBirthDate;
+    wxTextCtrl* inputPhone;
+    wxTextCtrl* inputFaculty;
+    wxTextCtrl* inputCourse;
+    wxTextCtrl* inputGroup;
+
+    Database db;
     std::vector<Student> students;
 
     void LoadStudents();
+    void RefreshStudentList();
 };
 
 enum {
-    ID_Hello = 1
+    ID_Hello = 1,
+    ID_AddStudent = 2
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -34,7 +47,7 @@ bool MyApp::OnInit() {
 }
 
 MyFrame::MyFrame(const wxString& title)
-    : wxFrame(NULL, wxID_ANY, title) {
+    : wxFrame(NULL, wxID_ANY, title), db("DKR.db") {
 
     wxMenu* menuFile = new wxMenu;
     menuFile->Append(ID_Hello, "&Hello...\tCtrl-H", "Help string shown in status bar for this menu item");
@@ -53,11 +66,65 @@ MyFrame::MyFrame(const wxString& title)
     CreateStatusBar();
     SetStatusText("Welcome to wxWidgets!");
 
-    studentList = new wxListBox(this, wxID_ANY);
+    wxPanel* panel = new wxPanel(this, -1);
+
+    wxBoxSizer* vbox = new wxBoxSizer(wxVERTICAL);
+
+    studentList = new wxListBox(panel, wxID_ANY);
+    vbox->Add(studentList, 1, wxEXPAND | wxALL, 10);
+
+    wxBoxSizer* hbox1 = new wxBoxSizer(wxHORIZONTAL);
+    hbox1->Add(new wxStaticText(panel, wxID_ANY, wxT("Surname")), 0, wxRIGHT, 8);
+    inputSurname = new wxTextCtrl(panel, wxID_ANY);
+    hbox1->Add(inputSurname, 1);
+    vbox->Add(hbox1, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* hbox2 = new wxBoxSizer(wxHORIZONTAL);
+    hbox2->Add(new wxStaticText(panel, wxID_ANY, wxT("Name")), 0, wxRIGHT, 8);
+    inputName = new wxTextCtrl(panel, wxID_ANY);
+    hbox2->Add(inputName, 1);
+    vbox->Add(hbox2, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* hbox3 = new wxBoxSizer(wxHORIZONTAL);
+    hbox3->Add(new wxStaticText(panel, wxID_ANY, wxT("Birth Date")), 0, wxRIGHT, 8);
+    inputBirthDate = new wxTextCtrl(panel, wxID_ANY);
+    hbox3->Add(inputBirthDate, 1);
+    vbox->Add(hbox3, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* hbox4 = new wxBoxSizer(wxHORIZONTAL);
+    hbox4->Add(new wxStaticText(panel, wxID_ANY, wxT("Phone")), 0, wxRIGHT, 8);
+    inputPhone = new wxTextCtrl(panel, wxID_ANY);
+    hbox4->Add(inputPhone, 1);
+    vbox->Add(hbox4, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* hbox5 = new wxBoxSizer(wxHORIZONTAL);
+    hbox5->Add(new wxStaticText(panel, wxID_ANY, wxT("Faculty")), 0, wxRIGHT, 8);
+    inputFaculty = new wxTextCtrl(panel, wxID_ANY);
+    hbox5->Add(inputFaculty, 1);
+    vbox->Add(hbox5, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* hbox6 = new wxBoxSizer(wxHORIZONTAL);
+    hbox6->Add(new wxStaticText(panel, wxID_ANY, wxT("Course")), 0, wxRIGHT, 8);
+    inputCourse = new wxTextCtrl(panel, wxID_ANY);
+    hbox6->Add(inputCourse, 1);
+    vbox->Add(hbox6, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxBoxSizer* hbox7 = new wxBoxSizer(wxHORIZONTAL);
+    hbox7->Add(new wxStaticText(panel, wxID_ANY, wxT("Group")), 0, wxRIGHT, 8);
+    inputGroup = new wxTextCtrl(panel, wxID_ANY);
+    hbox7->Add(inputGroup, 1);
+    vbox->Add(hbox7, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 10);
+
+    wxButton* btnAdd = new wxButton(panel, ID_AddStudent, wxT("Add Student"));
+    vbox->Add(btnAdd, 0, wxALIGN_CENTER | wxALL, 10);
+
+    panel->SetSizer(vbox);
 
     Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
     Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
+    Bind(wxEVT_BUTTON, &MyFrame::OnAddStudent, this, ID_AddStudent);
 
+    db.createTable();
     LoadStudents();
 }
 
@@ -69,11 +136,42 @@ void MyFrame::OnAbout(wxCommandEvent& event) {
     wxMessageBox("This is a wxWidgets Hello World example", "About Hello World", wxOK | wxICON_INFORMATION);
 }
 
-void MyFrame::LoadStudents() {
-    students.push_back(Student(1, "Ivanov", "Ivan", "2000-01-01", "123456789", "CS", 1, "A"));
-    students.push_back(Student(2, "Petrov", "Petr", "1999-02-01", "987654321", "Math", 2, "B"));
+void MyFrame::OnAddStudent(wxCommandEvent& event) {
+    int id = students.size() + 1;
+    std::string surname = inputSurname->GetValue().ToStdString();
+    std::string name = inputName->GetValue().ToStdString();
+    std::string birthDate = inputBirthDate->GetValue().ToStdString();
+    std::string phone = inputPhone->GetValue().ToStdString();
+    std::string faculty = inputFaculty->GetValue().ToStdString();
+    int course = std::stoi(inputCourse->GetValue().ToStdString());
+    std::string group = inputGroup->GetValue().ToStdString();
 
+    Student newStudent(id, surname, name, birthDate, phone, faculty, course, group);
+    db.insertStudent(newStudent);
+
+    // Debugging output
+    wxString studentInfo = wxString::Format("Student added: %s", wxString::FromUTF8(newStudent.toString().c_str()));
+    wxMessageBox(studentInfo, "Info", wxOK | wxICON_INFORMATION);
+
+    LoadStudents(); // 
+}
+
+void MyFrame::LoadStudents() {
+    students = db.queryStudents();
+
+    // Debugging output
+    wxString studentCount = wxString::Format("Students loaded: %u", static_cast<unsigned int>(students.size()));
+    wxMessageBox(studentCount, "Info", wxOK | wxICON_INFORMATION);
+
+    RefreshStudentList();
+}
+
+void MyFrame::RefreshStudentList() {
+    studentList->Clear();
     for (const auto& student : students) {
-        studentList->Append(wxString::FromUTF8(student.toString()));
+        studentList->Append(wxString::FromUTF8(student.toString().c_str()));
     }
+
+    // Debugging output
+    wxMessageBox("Student list refreshed.", "Info", wxOK | wxICON_INFORMATION);
 }

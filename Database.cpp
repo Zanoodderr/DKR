@@ -7,6 +7,9 @@ Database::Database(const std::string& dbPath) {
         std::cerr << "Can't open database: " << sqlite3_errmsg(db) << std::endl;
         db = nullptr;
     }
+    else {
+        std::cout << "Opened database successfully" << std::endl;
+    }
 }
 
 Database::~Database() {
@@ -20,7 +23,7 @@ void Database::createTable() {
 
     char* errMsg = 0;
     const char* sql = "CREATE TABLE IF NOT EXISTS STUDENT("
-        "ID INT PRIMARY KEY AUTOINCREMENT NOT NULL,"
+        "ID INT PRIMARY KEY NOT NULL,"
         "SURNAME TEXT NOT NULL,"
         "NAME TEXT NOT NULL,"
         "BIRTHDATE TEXT NOT NULL,"
@@ -92,4 +95,3 @@ std::vector<Student> Database::queryStudents() {
     sqlite3_finalize(stmt);
     return students;
 }
-
