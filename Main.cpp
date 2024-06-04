@@ -1,6 +1,7 @@
 #include <wx/wx.h>
 #include "Student.h"
 #include "Database.h"
+#include "Logger.h"
 #include <vector>
 
 class MyApp : public wxApp {
@@ -27,6 +28,7 @@ private:
     wxTextCtrl* inputGroup;
 
     Database db;
+    Logger logger;
     std::vector<Student> students;
 
     void LoadStudents();
@@ -47,7 +49,7 @@ bool MyApp::OnInit() {
 }
 
 MyFrame::MyFrame(const wxString& title)
-    : wxFrame(NULL, wxID_ANY, title), db("DKR.db") {
+    : wxFrame(NULL, wxID_ANY, title), db("DKR.db"), logger("app.log") {
 
     wxMenu* menuFile = new wxMenu;
     menuFile->Append(ID_Hello, "&Hello...\tCtrl-H", "Help string shown in status bar for this menu item");
@@ -149,9 +151,7 @@ void MyFrame::OnAddStudent(wxCommandEvent& event) {
     Student newStudent(id, surname, name, birthDate, phone, faculty, course, group);
     db.insertStudent(newStudent);
 
-    // Debugging output
-    wxString studentInfo = wxString::Format("Student added: %s", wxString::FromUTF8(newStudent.toString().c_str()));
-    wxMessageBox(studentInfo, "Info", wxOK | wxICON_INFORMATION);
+    logger.log("Student added: " + newStudent.toString());
 
     LoadStudents(); // 
 }
@@ -159,9 +159,7 @@ void MyFrame::OnAddStudent(wxCommandEvent& event) {
 void MyFrame::LoadStudents() {
     students = db.queryStudents();
 
-    // Debugging output
-    wxString studentCount = wxString::Format("Students loaded: %u", static_cast<unsigned int>(students.size()));
-    wxMessageBox(studentCount, "Info", wxOK | wxICON_INFORMATION);
+    logger.log("Students loaded: " + std::to_string(students.size()));
 
     RefreshStudentList();
 }
@@ -172,6 +170,5 @@ void MyFrame::RefreshStudentList() {
         studentList->Append(wxString::FromUTF8(student.toString().c_str()));
     }
 
-    // Debugging output
-    wxMessageBox("Student list refreshed.", "Info", wxOK | wxICON_INFORMATION);
+    logger.log("Student list refreshed.");
 }
