@@ -23,6 +23,7 @@ private:
     void OnFilterByGroup(wxCommandEvent& event);
     void OnFilterShowAll(wxCommandEvent& event);
     void OnAddStudent(wxCommandEvent& event);
+    void OnClearDatabase(wxCommandEvent& event);
 
     void FilterStudentsByFaculty(const std::string& faculty);
     void FilterStudentsByFacultyAndCourse();
@@ -50,11 +51,12 @@ private:
 enum {
     ID_Hello = 1,
     ID_AddStudent = 2,
-    ID_FilterByFaculty = 3,
-    ID_FilterByFacultyAndCourse = 4,
-    ID_FilterByBirthDate = 5,
-    ID_FilterByGroup = 6,
-    ID_FilterShowAll = 7
+    ID_ClearDatabase = 3,
+    ID_FilterByFaculty = 4,
+    ID_FilterByFacultyAndCourse = 5,
+    ID_FilterByBirthDate = 6,
+    ID_FilterByGroup = 7,
+    ID_FilterShowAll = 8
 };
 
 wxIMPLEMENT_APP(MyApp);
@@ -71,6 +73,7 @@ MyFrame::MyFrame(const wxString& title)
     wxMenu* menuFile = new wxMenu;
     menuFile->Append(ID_Hello, "&Info...\tCtrl-H", "Help string shown in status bar for this menu item");
     menuFile->AppendSeparator();
+    menuFile->Append(ID_ClearDatabase, "&Clear Database...\tCtrl-D", "Clear all students from the database");
     menuFile->Append(wxID_EXIT);
 
     wxMenu* menuHelp = new wxMenu;
@@ -149,6 +152,7 @@ MyFrame::MyFrame(const wxString& title)
 
     Bind(wxEVT_MENU, &MyFrame::OnExit, this, wxID_EXIT);
     Bind(wxEVT_MENU, &MyFrame::OnAbout, this, wxID_ABOUT);
+    Bind(wxEVT_MENU, &MyFrame::OnClearDatabase, this, ID_ClearDatabase);
     Bind(wxEVT_MENU, &MyFrame::OnFilterByFaculty, this, ID_FilterByFaculty);
     Bind(wxEVT_MENU, &MyFrame::OnFilterByFacultyAndCourse, this, ID_FilterByFacultyAndCourse);
     Bind(wxEVT_MENU, &MyFrame::OnFilterByBirthDate, this, ID_FilterByBirthDate);
@@ -165,7 +169,13 @@ void MyFrame::OnExit(wxCommandEvent& event) {
 }
 
 void MyFrame::OnAbout(wxCommandEvent& event) {
-    wxMessageBox("This is a wxWidgets Hello World example", "About Hello World", wxOK | wxICON_INFORMATION);
+    wxMessageBox("This is a DKR by Pershko F. (RE-11)... and ChatGPT", "About DKR", wxOK | wxICON_INFORMATION);
+}
+
+void MyFrame::OnClearDatabase(wxCommandEvent& event) {
+    db.clearTable();
+    LoadStudents(); 
+    logger.log("Database cleared.");
 }
 
 void MyFrame::OnAddStudent(wxCommandEvent& event) {

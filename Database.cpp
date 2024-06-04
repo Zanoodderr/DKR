@@ -95,3 +95,19 @@ std::vector<Student> Database::queryStudents() {
     sqlite3_finalize(stmt);
     return students;
 }
+
+void Database::clearTable() {
+    if (!db) return;
+
+    char* errMsg = 0;
+    const char* sql = "DELETE FROM STUDENT";
+
+    int rc = sqlite3_exec(db, sql, 0, 0, &errMsg);
+    if (rc != SQLITE_OK) {
+        std::cerr << "SQL error: " << errMsg << std::endl;
+        sqlite3_free(errMsg);
+    }
+    else {
+        std::cout << "Table cleared successfully" << std::endl;
+    }
+}
